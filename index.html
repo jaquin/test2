@@ -5,17 +5,25 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Canlı Altın & Döviz Paneli</title>
 <script src="https://cdn.tailwindcss.com"></script>
+<style>
+  /* Basit animasyon ve renkler */
+  .card { transition: transform 0.2s, background 0.2s; }
+  .card:hover { transform: scale(1.05); background: rgba(255,255,255,0.15); }
+  .trend-up { color: #4ade80; }
+  .trend-down { color: #f87171; }
+</style>
 </head>
 <body class="bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 text-white min-h-screen flex items-center justify-center">
-<div id="root" class="w-full max-w-4xl p-6"></div>
+<div id="root" class="w-full max-w-5xl p-6"></div>
 
-<script type="text/javascript">
+<script>
+let prevData = {};
 async function fetchData() {
   const root = document.getElementById('root');
   root.innerHTML = '<div class="text-center text-xl">Yükleniyor…</div>';
 
   try {
-    // 🛡️ CORS güvenli proxy
+    // CORS proxy ile veri çekme
     const response = await fetch('https://api.allorigins.win/get?url=' + encodeURIComponent('https://finans.truncgil.com/v4/today.json'));
     const wrapped = await response.json();
     const json = JSON.parse(wrapped.contents);
@@ -27,36 +35,47 @@ async function fetchData() {
       eur: json?.EUR?.Selling ?? '--'
     };
 
+    const getTrendClass = (key) => {
+      if (!prevData[key] || prevData[key] === '--') return '';
+      if (data[key] === '--') return '';
+      if (data[key] > prevData[key]) return 'trend-up';
+      if (data[key] < prevData[key]) return 'trend-down';
+      return '';
+    };
+
+    prevData = {...data};
+
     root.innerHTML = `
-      <h1 class="text-2xl font-bold mb-6 text-center">📊 Altın & Döviz Paneli</h1>
-      <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
-        <div class="bg-white/10 backdrop-blur rounded-2xl p-5 shadow-lg text-center">
-          <div>🪙<br>Gram Altın</div>
-          <div class="mt-2 text-2xl font-bold">${data.gold} ₺</div>
+      <h1 class="text-3xl font-bold mb-6 text-center">📊 Canlı Altın & Döviz</h1>
+      <div class="grid grid-cols-2 md:grid-cols-4 gap-6">
+        <div class="card bg-white/10 backdrop-blur rounded-2xl p-6 text-center">
+          <div class="text-xl">🪙 Gram Altın</div>
+          <div class="mt-3 text-2xl font-bold ${getTrendClass('gold')}">${data.gold} ₺</div>
         </div>
-        <div class="bg-white/10 backdrop-blur rounded-2xl p-5 shadow-lg text-center">
-          <div>🥈<br>Gram Gümüş</div>
-          <div class="mt-2 text-2xl font-bold">${data.silver} ₺</div>
+        <div class="card bg-white/10 backdrop-blur rounded-2xl p-6 text-center">
+          <div class="text-xl">🥈 Gram Gümüş</div>
+          <div class="mt-3 text-2xl font-bold ${getTrendClass('silver')}">${data.silver} ₺</div>
         </div>
-        <div class="bg-white/10 backdrop-blur rounded-2xl p-5 shadow-lg text-center">
-          <div>💵<br>Dolar</div>
-          <div class="mt-2 text-2xl font-bold">${data.usd} $</div>
+        <div class="card bg-white/10 backdrop-blur rounded-2xl p-6 text-center">
+          <div class="text-xl">💵 Dolar</div>
+          <div class="mt-3 text-2xl font-bold ${getTrendClass('usd')}">${data.usd} $</div>
         </div>
-        <div class="bg-white/10 backdrop-blur rounded-2xl p-5 shadow-lg text-center">
-          <div>💶<br>Euro</div>
-          <div class="mt-2 text-2xl font-bold">${data.eur} $</div>
+        <div class="card bg-white/10 backdrop-blur rounded-2xl p-6 text-center">
+          <div class="text-xl">💶 Euro</div>
+          <div class="mt-3 text-2xl font-bold ${getTrendClass('eur')}">${data.eur} $</div>
         </div>
       </div>
       <div class="mt-6 text-center text-sm opacity-70">Son güncelleme: ${new Date().toLocaleTimeString('tr-TR')}</div>
     `;
+
   } catch (e) {
-    root.innerHTML = '<div class="text-red-500 text-center">❌ Veri çekilemedi</div>';
-    console.error('Veri çekme hatası', e);
+    root.innerHTML = '<div class="text-red-500 text-center">❌ Veri çekilemedi / Proxy veya CORS sorunu</div>';
+    console.error(e);
   }
 }
 
 fetchData();
-setInterval(fetchData, 15000);
+setInterval(fetchData, 5000); // 5 saniyede bir anlık yenileme
 </script>
 </body>
 </html>
